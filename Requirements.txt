@@ -1,0 +1,12 @@
+chromadb
+langchain
+pypdf
+sentencepiece
+bitsandbytes
+transformers
+peft
+accelerate
+sentence-transformers
+tensorflow_hub
+tensorflow_text
+tensorflow
