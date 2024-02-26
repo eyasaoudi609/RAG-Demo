@@ -9,10 +9,12 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndB
 from langchain.document_loaders import PyPDFLoader
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
-from langchain.vectorstores.chroma import Chroma
 from langchain.document_loaders import DirectoryLoader
 from langchain.docstore.document import Document
 import json
+import tensorflow_hub as hub
+import tensorflow as tf
+import tensorflow_text  # Required to use the Universal Sentence Encoder
 
 
 
@@ -30,15 +32,6 @@ model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=150)
 llm = HuggingFacePipeline(pipeline=pipe)
 
-
-
-
-from langchain_community.vectorstores import Chroma
-import json
-import tensorflow_hub as hub
-import tensorflow as tf
-import tensorflow_text  # Required to use the Universal Sentence Encoder
-
 # Load JSON data from file
 json_file_path = "/content/drive/MyDrive/menu.json"
 with open(json_file_path, "r") as file:
@@ -50,7 +43,7 @@ for category, items in data.items():
     for item_id, item_data in items.items():
         # Check if the item_data contains a description
         if isinstance(item_data, list) and len(item_data) > 0:
-            description = item_data[0]  # Assuming description is the first element
+            description = item_data[0]  
             descriptions.append(description)
 
 # Load the Universal Sentence Encoder model
@@ -79,7 +72,7 @@ vectordb = Chroma(persist_directory="test_index", embedding_function = embedding
 
 # Load the retriver
 retriever = vectordb.as_retriever(search_kwargs = {"k" : 3})
-qna_prompt_template="""###  If the data doesn't contain the answer to the question, then you must return 'Not enough information.'
+qna_prompt_template="""###  If the data doesn't contain the answer to the question, then you must return 'No response, Not enough information.'
 
 {context}
 
@@ -90,8 +83,6 @@ PROMPT = PromptTemplate(
 )
 chain = load_qa_chain(llm, chain_type="stuff", prompt=PROMPT)
 
-
-
 # A utility function for answer generation
 def ask(question):
    context = retriever.get_relevant_documents(question)
@@ -99,10 +90,7 @@ def ask(question):
 
    answer = (chain({"input_documents": context, "question": question}, return_only_outputs=True))['output_text']
    return answer
-
-
-
-
+    
 # Take the user input and call the function to generate output
 user_question = input("User: ")
 answer = ask(user_question)
